@@ -26,9 +26,12 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
-  BookOpen
+  BookOpen,
+  Download,
+  FileDown
 } from 'lucide-react';
 import { ArchitecturalPlanResponse, FileTreeNode, AgentName, SSEEvent } from './types';
+import { buildScaffoldMjs, buildBlueprintMarkdown, collectFiles, downloadText } from './export';
 
 // Human-readable status line shown per active agent.
 const AGENT_STATUS: Record<AgentName, string> = {
@@ -189,6 +192,25 @@ export default function App() {
     navigator.clipboard.writeText(text ?? '');
     setCopiedFile(identifier);
     setTimeout(() => setCopiedFile(null), 2000);
+  };
+
+  // Slugify the project name into a safe file prefix.
+  const slug = (name?: string) =>
+    (name || 'architecture-blueprint')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'blueprint';
+
+  // Export the whole blueprint as a runnable Node scaffold script.
+  const downloadScaffold = () => {
+    if (!result) return;
+    downloadText('scaffold.mjs', buildScaffoldMjs(result), 'text/javascript');
+  };
+
+  // Export the whole blueprint as a single Markdown spec document.
+  const downloadBlueprint = () => {
+    if (!result) return;
+    downloadText(`${slug(result.projectName)}-BLUEPRINT.md`, buildBlueprintMarkdown(result), 'text/markdown');
   };
 
   const toggleDirectory = (dirName: string) => {
@@ -536,9 +558,42 @@ export default function App() {
                     "{result.projectName}" &mdash; {result.oneLiner}
                   </p>
                 </div>
-                <div className="text-right p-4 bg-[#0D0D0F] border border-white/5 rounded-xl self-stretch md:self-auto flex items-center justify-between md:block">
-                  <span className="text-[10px] uppercase tracking-[0.15em] text-white/40 block">Quality Scale</span>
-                  <span id="efficiency-indicator" className="block text-3xl font-mono leading-none text-white font-bold">99.8%</span>
+                <div className="flex items-stretch gap-3 self-stretch md:self-auto">
+                  {/* Export the entire blueprint — the product payoff, not file-by-file copy.
+                      Scaffold is gated on having files: during streaming (after ORCHESTRATOR,
+                      before CODER) collectFiles is empty and a scaffold would write 0 files. */}
+                  {(() => { const fileCount = Object.keys(collectFiles(result)).length; return (
+                  <div id="export-actions" className="flex flex-col gap-2">
+                    <button
+                      id="export-scaffold-btn"
+                      onClick={downloadScaffold}
+                      disabled={fileCount === 0}
+                      title={fileCount === 0
+                        ? "Boilerplates not generated yet — wait for the Coder agent"
+                        : "Download a runnable Node script that writes the whole project to disk"}
+                      className="flex items-center gap-2 bg-white text-black hover:bg-white/90 disabled:bg-white/20 disabled:text-black/40 disabled:cursor-not-allowed px-4 py-2.5 rounded font-bold uppercase text-[10px] tracking-wider transition-all active:scale-[0.98]"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Scaffold (.mjs)
+                    </button>
+                    <button
+                      id="export-blueprint-btn"
+                      onClick={downloadBlueprint}
+                      title="Download the full blueprint as a single Markdown spec"
+                      className="flex items-center gap-2 bg-black/40 border border-white/15 text-white hover:border-white/35 px-4 py-2.5 rounded font-bold uppercase text-[10px] tracking-wider transition-all active:scale-[0.98]"
+                    >
+                      <FileDown className="w-3.5 h-3.5" />
+                      Blueprint (.md)
+                    </button>
+                    <span className="text-[9px] font-mono text-white/30 text-center">
+                      {fileCount} {fileCount === 1 ? 'file' : 'files'}
+                    </span>
+                  </div>
+                  ); })()}
+                  <div className="text-right p-4 bg-[#0D0D0F] border border-white/5 rounded-xl flex items-center justify-between md:block">
+                    <span className="text-[10px] uppercase tracking-[0.15em] text-white/40 block">Quality Scale</span>
+                    <span id="efficiency-indicator" className="block text-3xl font-mono leading-none text-white font-bold">99.8%</span>
+                  </div>
                 </div>
               </div>
 
