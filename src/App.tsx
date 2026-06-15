@@ -470,9 +470,23 @@ export default function App() {
                   <h1 className="text-4xl md:text-5xl font-light tracking-tight leading-none mb-3">
                     Optimized <span className="font-black italic block md:inline text-white">Blueprint</span>
                   </h1>
-                  <p className="text-sm text-white/60 italic font-mono">
-                    "{result.projectName}" &mdash; {result.oneLiner}
-                  </p>
+                  <div className="flex gap-4 items-center">
+                    <p className="text-sm text-white/60 italic font-mono">
+                      "{result.projectName}" &mdash; {result.oneLiner}
+                    </p>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(JSON.stringify(result, null, 2));
+                        setCopiedFile('full-blueprint');
+                        setTimeout(() => setCopiedFile(null), 2000);
+                      }}
+                      className="flex items-center gap-2 hover:bg-white/10 text-white/50 hover:text-white px-2 py-1 rounded text-xs transition-colors border border-white/10"
+                      title="Copy raw JSON blueprint for other AIs"
+                    >
+                      {copiedFile === 'full-blueprint' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                      <span className="font-mono">{copiedFile === 'full-blueprint' ? 'Exported!' : 'Export JSON'}</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="text-right p-4 bg-[#0D0D0F] border border-white/5 rounded-xl self-stretch md:self-auto flex items-center justify-between md:block">
                   <span className="text-[10px] uppercase tracking-[0.15em] text-white/40 block">Quality Scale</span>
