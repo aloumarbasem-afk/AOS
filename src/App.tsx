@@ -29,6 +29,9 @@ import {
   BookOpen
 } from 'lucide-react';
 import { ArchitecturalPlanResponse, FileTreeNode } from './types';
+import { LiveVoiceArchitect } from './components/LiveVoiceArchitect';
+import { motion, AnimatePresence } from 'motion/react';
+import { GatewaysAuth } from './components/GatewaysAuth';
 
 // Preset configurations for user convenience
 const PRESETS = [
@@ -47,6 +50,7 @@ const PRESETS = [
 ];
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<'configure' | 'blueprint' | 'gateways'>('configure');
   const [prompt, setPrompt] = useState(PRESETS[0].prompt);
   const [preferredFrontend, setPreferredFrontend] = useState('');
   const [preferredBackend, setPreferredBackend] = useState('');
@@ -120,6 +124,7 @@ export default function App() {
 
       const data: ArchitecturalPlanResponse = await response.json();
       setResult(data);
+      setActiveTab('blueprint');
       
       // Auto-select the first boilerplate file if available
       if (data.boilerplates && Object.keys(data.boilerplates).length > 0) {
@@ -218,11 +223,27 @@ export default function App() {
         </div>
       </nav>
 
+      {/* Tab Navigation */}
+      <div className="flex border-b border-white/10 px-8 bg-[#0D0D0F] shrink-0">
+        <button onClick={() => setActiveTab('configure')} className={`py-4 px-6 text-[10px] font-mono uppercase tracking-widest transition-all ${activeTab === 'configure' ? 'border-b-2 border-white text-white font-bold' : 'text-white/40 hover:text-white/80'}`}>01. Configure Workflow</button>
+        <button onClick={() => setActiveTab('blueprint')} className={`py-4 px-6 text-[10px] font-mono uppercase tracking-widest transition-all ${activeTab === 'blueprint' ? 'border-b-2 border-white text-white font-bold' : 'text-white/40 hover:text-white/80'}`}>02. Architectural Blueprint</button>
+        <button onClick={() => setActiveTab('gateways')} className={`py-4 px-6 text-[10px] font-mono uppercase tracking-widest transition-all ${activeTab === 'gateways' ? 'border-b-2 border-white text-white font-bold' : 'text-white/40 hover:text-white/80'}`}>03. Gateways & Auth</button>
+      </div>
+
       {/* Main Grid Workspace */}
-      <main id="app-main-workspace" className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-0">
+      <main id="app-main-workspace" className="flex-grow flex flex-col relative overflow-hidden bg-[#0A0A0B]">
+        <AnimatePresence mode="wait">
         
-        {/* Left column: User Prompts, Agent Select, Trigger button */}
-        <div id="left-sidebar-controls" className="lg:col-span-4 p-8 border-b lg:border-b-0 lg:border-r border-white/10 flex flex-col gap-6 bg-[#0D0D0F]">
+          {activeTab === 'configure' && (
+            <motion.div 
+              key="configure"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-2xl mx-auto h-full overflow-y-auto p-8"
+            >
+              <div id="left-sidebar-controls" className="flex flex-col gap-6">
           
           {/* Preset Buttons */}
           <div>
@@ -385,11 +406,20 @@ export default function App() {
               </div>
             )}
           </div>
+            </div>
+          </motion.div>
+          )}
 
-        </div>
-
-        {/* Right column: The Full Architectural Output Dashboard */}
-        <div id="right-dashboard-pane" className="lg:col-span-8 p-6 md:p-10 flex flex-col gap-10 overflow-auto bg-[#0A0A0B]">
+          {activeTab === 'blueprint' && (
+            <motion.div 
+              key="blueprint"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+              className="w-full h-full overflow-y-auto"
+            >
+              <div id="right-dashboard-pane" className="max-w-6xl mx-auto p-6 md:p-10 flex flex-col gap-10">
           
           {!result && !isLoading && (
             <div id="empty-state-welcome" className="flex-grow flex flex-col items-center justify-center text-center my-12 max-w-xl mx-auto gap-6 transition-all duration-300">
@@ -890,6 +920,23 @@ export default function App() {
           )}
 
         </div>
+      </motion.div>
+      )}
+        
+          {activeTab === 'gateways' && (
+             <motion.div 
+               key="gateways"
+               initial={{ opacity: 0, x: -10 }}
+               animate={{ opacity: 1, x: 0 }}
+               exit={{ opacity: 0, x: 10 }}
+               transition={{ duration: 0.2 }}
+               className="w-full h-full overflow-y-auto py-8"
+             >
+               <GatewaysAuth />
+             </motion.div>
+          )}
+
+        </AnimatePresence>
       </main>
 
       {/* Styled Footer */}
@@ -905,6 +952,7 @@ export default function App() {
         </div>
       </footer>
 
+      <LiveVoiceArchitect />
     </div>
   );
 }

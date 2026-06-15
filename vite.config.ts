@@ -11,41 +11,7 @@ export default defineConfig(() => {
   return {
     plugins: [
       react(), 
-      tailwindcss(),
-      {
-        name: 'api-server-middleware',
-        configureServer(server) {
-          server.middlewares.use(async (req, res, next) => {
-            if (req.url === '/api/generate-plan' && req.method === 'POST') {
-              let body = '';
-              req.on('data', chunk => {
-                body += chunk;
-              });
-              req.on('end', async () => {
-                try {
-                  const { prompt, agents } = JSON.parse(body);
-                  if (!prompt) {
-                    res.statusCode = 400;
-                    res.setHeader('Content-Type', 'application/json');
-                    res.end(JSON.stringify({ error: "The architectural prompt is required." }));
-                    return;
-                  }
-                  const plan = await generateArchitecturalPlan(prompt, agents || []);
-                  res.statusCode = 200;
-                  res.setHeader('Content-Type', 'application/json');
-                  res.end(JSON.stringify(plan));
-                } catch (error: any) {
-                  res.statusCode = 500;
-                  res.setHeader('Content-Type', 'application/json');
-                  res.end(JSON.stringify({ error: error.message || "Failed to process request" }));
-                }
-              });
-            } else {
-              next();
-            }
-          });
-        }
-      }
+      tailwindcss()
     ],
     resolve: {
       alias: {
