@@ -2,7 +2,8 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
-import { generateArchitecturalPlan } from './src/api-handler';
+import { generatePlanStreaming } from './src/api-handler';
+import type { SSEEvent } from './src/types';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -22,22 +23,52 @@ export default defineConfig(() => {
                 body += chunk;
               });
               req.on('end', async () => {
+                let started = false;
+                let aborted = false;
+                const isAborted = () => aborted;
+                req.on('close', () => {
+                  aborted = true;
+                });
                 try {
-                  const { prompt, agents } = JSON.parse(body);
+                  const { prompt, agents, preferredFrontend, preferredBackend, preferredDatabase } = JSON.parse(body);
                   if (!prompt) {
                     res.statusCode = 400;
                     res.setHeader('Content-Type', 'application/json');
                     res.end(JSON.stringify({ error: "The architectural prompt is required." }));
                     return;
                   }
-                  const plan = await generateArchitecturalPlan(prompt, agents || []);
+
+                  // Switch to SSE.
                   res.statusCode = 200;
-                  res.setHeader('Content-Type', 'application/json');
-                  res.end(JSON.stringify(plan));
+                  res.setHeader('Content-Type', 'text/event-stream');
+                  res.setHeader('Cache-Control', 'no-cache');
+                  res.setHeader('Connection', 'keep-alive');
+                  started = true;
+
+                  const emit = (event: SSEEvent) => {
+                    if (aborted) return;
+                    res.write(`data: ${JSON.stringify(event)}\n\n`);
+                  };
+
+                  await generatePlanStreaming(
+                    { prompt, agents: agents || [], preferredFrontend, preferredBackend, preferredDatabase },
+                    emit,
+                    isAborted
+                  );
+
+                  if (!aborted) res.end();
                 } catch (error: any) {
-                  res.statusCode = 500;
-                  res.setHeader('Content-Type', 'application/json');
-                  res.end(JSON.stringify({ error: error.message || "Failed to process request" }));
+                  const message = error?.message || "Failed to process request";
+                  if (!started) {
+                    res.statusCode = 500;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ error: message }));
+                  } else if (!aborted) {
+                    res.write(`data: ${JSON.stringify({ type: "agent_error", agent: "ORCHESTRATOR", error: message })}\n\n`);
+                    // Always terminate with a `done` frame (contract §3) — parity with server.ts.
+                    res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+                    res.end();
+                  }
                 }
               });
             } else {
