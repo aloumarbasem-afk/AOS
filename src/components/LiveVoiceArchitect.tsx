@@ -147,7 +147,7 @@ export const LiveVoiceArchitect: React.FC = () => {
       <button
         onClick={isConnected ? disconnectVoice : connectVoice}
         disabled={isConnecting}
-        className={`flex items-center gap-2 px-4 py-3 rounded-full shadow-lg transition-all duration-300 backdrop-blur-md border ${
+        className={`flex items-center gap-2 px-4 py-3 rounded-full shadow-lg transition-all duration-300 backdrop-blur-md border cursor-pointer hover:scale-[1.03] active:scale-[0.98] ${
           isConnected 
             ? 'bg-rose-500/20 shadow-rose-500/20 border-rose-500/50 hover:bg-rose-500/30' 
             : 'bg-indigo-500/20 shadow-indigo-500/20 border-indigo-500/50 hover:bg-indigo-500/30'

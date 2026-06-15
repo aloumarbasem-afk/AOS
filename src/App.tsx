@@ -438,12 +438,12 @@ export default function App() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full text-left font-mono mt-4">
-                <div className="p-4 bg-[#0D0D0F] border border-white/5 rounded-lg">
-                  <div className="text-[10px] tracking-wider text-white/30 uppercase mb-1">01. Dynamic intelligence</div>
+                <div className="p-4 glass-panel glow-border glow-border-primary rounded-lg transition-all duration-300">
+                  <div className="text-[10px] tracking-wider text-white/40 uppercase mb-1">01. Dynamic intelligence</div>
                   <p className="text-xs text-white/60">Finds perfect combinations for Next.js, Express, PostgreSQL, Redis, Drizzle, etc.</p>
                 </div>
-                <div className="p-4 bg-[#0D0D0F] border border-white/5 rounded-lg">
-                  <div className="text-[10px] tracking-wider text-white/30 uppercase mb-1">02. Automated Pipeline</div>
+                <div className="p-4 glass-panel glow-border glow-border-indigo rounded-lg transition-all duration-300">
+                  <div className="text-[10px] tracking-wider text-white/40 uppercase mb-1">02. Automated Pipeline</div>
                   <p className="text-xs text-white/60">Outlines complete testing and production-grade GitHub Actions CI/CD yml workflows.</p>
                 </div>
               </div>
@@ -490,14 +490,14 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-                <div className="text-right p-4 bg-[#0D0D0F] border border-white/5 rounded-xl self-stretch md:self-auto flex items-center justify-between md:block">
+                <div className="text-right p-4 glass-panel glow-border rounded-xl self-stretch md:self-auto flex items-center justify-between md:block">
                   <span className="text-[10px] uppercase tracking-[0.15em] text-white/40 block">Quality Scale</span>
                   <span id="efficiency-indicator" className="block text-3xl font-mono leading-none text-white font-bold">99.8%</span>
                 </div>
               </div>
 
               {/* Scope requirements extracted */}
-              <div id="scope-boundaries-box" className="bg-[#0D0D0F] border border-white/5 p-5 rounded-lg">
+              <div id="scope-boundaries-box" className="glass-panel glow-border p-5 rounded-lg">
                 <h3 className="text-[11px] uppercase tracking-widest mb-3 opacity-50 font-mono">Requirements & Bounds Identified</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                   {result.scope && result.scope.map((item, idx) => (
@@ -597,7 +597,7 @@ export default function App() {
               </div>
 
               {/* Authentication & Authorization Strategy Panel */}
-              <div id="auth-strategy-panel" className="bg-[#0D0D0F] border border-white/5 p-6 rounded-xl">
+              <div id="auth-strategy-panel" className="glass-panel glow-border glow-border-rose p-6 rounded-xl">
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/5">
                   <ShieldAlert className="w-4 h-4 text-rose-400" />
                   <h3 className="text-sm font-bold tracking-tight text-white">Authentication & Authorization Strategy</h3>
@@ -637,7 +637,7 @@ export default function App() {
 
 
               {/* Interactive File Hierarchy Explorer & Code Boilerplate Panel */}
-              <div id="interactive-explorer-panel" className="bg-[#0D0D0F] border border-white/8 rounded-xl overflow-hidden">
+              <div id="interactive-explorer-panel" className="glass-panel glow-border rounded-xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-white/10 bg-black/40 flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <FolderTree className="w-4 h-4 text-white/60" />
@@ -697,7 +697,7 @@ export default function App() {
 
 
               {/* The Automated Testing Suite (Vitest/Jest) Panel */}
-              <div id="testing-strategy-panel" className="bg-[#0D0D0F] border border-white/5 p-6 rounded-xl">
+              <div id="testing-strategy-panel" className="glass-panel glow-border glow-border-emerald p-6 rounded-xl">
                 <div className="flex justify-between items-center mb-4 pb-3 border-b border-white/5">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-400" />
@@ -754,7 +754,7 @@ export default function App() {
 
 
               {/* Enterprise-grade CI/CD and DevOps panel */}
-              <div id="cicd-pipeline-panel" className="bg-[#0D0D0F] border border-white/5 p-6 rounded-xl">
+              <div id="cicd-pipeline-panel" className="glass-panel glow-border glow-border-indigo p-6 rounded-xl">
                 <div className="flex justify-between items-center mb-5 pb-3 border-b border-white/5">
                   <div className="flex items-center gap-2">
                     <GitBranch className="w-4 h-4 text-indigo-400" />
@@ -844,7 +844,7 @@ export default function App() {
                     <h4 className="text-[10px] uppercase text-white/40 font-mono mb-3">Modular Implementation Stages</h4>
                     <div className="space-y-3">
                       {result.agentPlan?.phases?.map((phase, pI) => (
-                        <div key={pI} className="bg-[#0D0D0F] border border-white/5 p-4 rounded-lg">
+                        <div key={pI} className="glass-panel glow-border p-4 rounded-lg">
                           <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1">
                             <span className="text-xs font-bold text-white">Phase 0{pI + 1}: {phase.title}</span>
                             {phase.commandToRun && (
@@ -886,7 +886,7 @@ export default function App() {
 
 
               {/* Professional CSS Optimization & modular guide */}
-              <div id="frontend-styling-and-optimization" className="bg-[#0D0D0F] border border-white/5 p-6 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div id="frontend-styling-and-optimization" className="glass-panel glow-border p-6 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 <div>
                   <h3 className="text-xs font-mono uppercase tracking-widest text-white/40 mb-3 flex items-center gap-2">
