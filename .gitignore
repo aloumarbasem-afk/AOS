@@ -6,6 +6,3 @@ coverage/
 *.log
 .env*
 !.env.example
-
-# Claude Code local session artifacts
-.claude/

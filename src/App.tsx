@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Terminal, 
   Settings, 
@@ -26,23 +26,9 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
-  BookOpen,
-  Download,
-  FileDown
+  BookOpen
 } from 'lucide-react';
-import { ArchitecturalPlanResponse, FileTreeNode, AgentName, SSEEvent } from './types';
-import { buildScaffoldMjs, buildBlueprintMarkdown, collectFiles, downloadText } from './export';
-
-// Human-readable status line shown per active agent.
-const AGENT_STATUS: Record<AgentName, string> = {
-  ORCHESTRATOR: 'Orchestrator: locking stack, scope & agent plan...',
-  DESIGNER: 'Designer: drafting high-performance frontend guide...',
-  CODER: 'Coder: scaffolding tree, boilerplates & auth strategy...',
-  TESTER: 'Tester: writing testing config & CI/CD pipeline...',
-};
-
-// Which agent fills each dashboard section (drives inline "pending" hints).
-const AGENT_ORDER: AgentName[] = ['ORCHESTRATOR', 'DESIGNER', 'CODER', 'TESTER'];
+import { ArchitecturalPlanResponse, FileTreeNode } from './types';
 
 // Preset configurations for user convenience
 const PRESETS = [
@@ -68,13 +54,10 @@ export default function App() {
   const [agent, setAgent] = useState('Cursor AI');
   const [agentCount, setAgentCount] = useState<'single' | 'multi'>('single');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<Partial<ArchitecturalPlanResponse> | null>(null);
+  const [currentLoadingStep, setCurrentLoadingStep] = useState(0);
+  const [result, setResult] = useState<ArchitecturalPlanResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedFile, setCopiedFile] = useState<string | null>(null);
-  // Real-time agent activity from the SSE stream.
-  const [activeAgent, setActiveAgent] = useState<AgentName | null>(null);
-  // Non-fatal per-agent failures surfaced inline (section omitted but pipeline continued).
-  const [agentWarnings, setAgentWarnings] = useState<Partial<Record<AgentName, string>>>({});
 
   // File explorer interactions
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
@@ -82,135 +65,80 @@ export default function App() {
     'root': true,
   });
 
-  // Live status line reflecting the real active agent (replaces the old
-  // simulated interval). Falls back to a neutral message between agents.
-  const loadingStatus = activeAgent
-    ? AGENT_STATUS[activeAgent]
-    : 'Spinning up the architecture swarm...';
+  const loadingSteps = [
+    "Analyzing requirements & core constraints...",
+    "Evaluating intelligence stack & recommendations...",
+    "Querying Senior Dev intelligence agent...",
+    "Synthesizing optimal stack choices...",
+    "Drafting database schema & philosophy...",
+    "Generating granular authentication & RBAC strategy...",
+    "Building interactive tree directory...",
+    "Writing custom testing & CI/CD workflow...",
+    "Applying high-performance standard layout..."
+  ];
 
-  // Handle a single decoded SSE frame from the streaming pipeline.
-  const handleSSEEvent = (event: SSEEvent) => {
-    switch (event.type) {
-      case 'agent_start':
-        setActiveAgent(event.agent);
-        break;
-      case 'agent_complete':
-        setResult((prev) => {
-          const merged = { ...(prev || {}), ...event.payload };
-          // Auto-select the first boilerplate file once boilerplates arrive (CODER).
-          if (
-            event.payload.boilerplates &&
-            Object.keys(event.payload.boilerplates).length > 0
-          ) {
-            setSelectedFilePath((cur) => cur ?? Object.keys(event.payload.boilerplates!)[0]);
+  // Simulated compilation effect
+  useEffect(() => {
+    let interval: any;
+    if (isLoading) {
+      setCurrentLoadingStep(0);
+      interval = setInterval(() => {
+        setCurrentLoadingStep((prev) => {
+          if (prev >= loadingSteps.length - 1) {
+            clearInterval(interval);
+            return prev;
           }
-          return merged;
+          return prev + 1;
         });
-        break;
-      case 'agent_error':
-        setAgentWarnings((prev) => ({ ...prev, [event.agent]: event.error }));
-        break;
-      case 'done':
-        setActiveAgent(null);
-        break;
+      }, 1500);
     }
-  };
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
-  // Generate the architectural blueprint via a POST + SSE stream.
-  // EventSource is GET-only, so we read the response body manually.
+  // Generate the architectural blueprint
   const generateBlueprint = async () => {
     setIsLoading(true);
     setErrorMsg(null);
     setResult(null);
-    setActiveAgent(null);
-    setAgentWarnings({});
-    setSelectedFilePath(null);
-
     try {
       const response = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt,
-          agents: [agent],
-          preferredFrontend,
-          preferredBackend,
-          preferredDatabase,
+        body: JSON.stringify({ 
+          prompt, 
+          agents: [agent], 
+          preferredFrontend, 
+          preferredBackend, 
+          preferredDatabase 
         }),
       });
 
-      // Non-SSE error path (e.g. the !prompt 400 guard) returns JSON.
-      if (!response.ok || !response.body) {
-        let message = 'Server error generating plan.';
-        try {
-          const errJson = await response.json();
-          message = errJson.error || message;
-        } catch {
-          /* body was not JSON */
-        }
-        throw new Error(message);
+      if (!response.ok) {
+        const errJson = await response.json();
+        throw new Error(errJson.error || 'Server error generating plan.');
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        // SSE frames are separated by a blank line. Keep any trailing
-        // partial frame in the buffer for the next chunk.
-        const frames = buffer.split('\n\n');
-        buffer = frames.pop() ?? '';
-
-        for (const frame of frames) {
-          const line = frame.trim();
-          if (!line.startsWith('data:')) continue;
-          const json = line.slice(line.indexOf('data:') + 'data:'.length).trim();
-          if (!json) continue;
-          try {
-            handleSSEEvent(JSON.parse(json) as SSEEvent);
-          } catch (parseErr) {
-            console.error('Failed to parse SSE frame:', json, parseErr);
-          }
-        }
+      const data: ArchitecturalPlanResponse = await response.json();
+      setResult(data);
+      
+      // Auto-select the first boilerplate file if available
+      if (data.boilerplates && Object.keys(data.boilerplates).length > 0) {
+        setSelectedFilePath(Object.keys(data.boilerplates)[0]);
+      } else {
+        setSelectedFilePath(null);
       }
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'A network error occurred.');
     } finally {
       setIsLoading(false);
-      setActiveAgent(null);
     }
   };
 
-  const copyToClipboard = (text: string | undefined, identifier: string) => {
-    navigator.clipboard.writeText(text ?? '');
+  const copyToClipboard = (text: string, identifier: string) => {
+    navigator.clipboard.writeText(text);
     setCopiedFile(identifier);
     setTimeout(() => setCopiedFile(null), 2000);
-  };
-
-  // Slugify the project name into a safe file prefix.
-  const slug = (name?: string) =>
-    (name || 'architecture-blueprint')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'blueprint';
-
-  // Export the whole blueprint as a runnable Node scaffold script.
-  const downloadScaffold = () => {
-    if (!result) return;
-    downloadText('scaffold.mjs', buildScaffoldMjs(result), 'text/javascript');
-  };
-
-  // Export the whole blueprint as a single Markdown spec document.
-  const downloadBlueprint = () => {
-    if (!result) return;
-    downloadText(`${slug(result.projectName)}-BLUEPRINT.md`, buildBlueprintMarkdown(result), 'text/markdown');
   };
 
   const toggleDirectory = (dirName: string) => {
@@ -431,9 +359,9 @@ export default function App() {
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
                 <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-white/80 animate-pulse text-center">
-                  {loadingStatus}
+                  {loadingSteps[currentLoadingStep]}
                 </span>
-                <span className="text-[9px] text-white/40 font-mono">{activeAgent ? `${activeAgent} working...` : 'Evaluating architecture...'}</span>
+                <span className="text-[9px] text-white/40 font-mono">Evaluating architecture...</span>
               </div>
             ) : (
               <button
@@ -463,7 +391,7 @@ export default function App() {
         {/* Right column: The Full Architectural Output Dashboard */}
         <div id="right-dashboard-pane" className="lg:col-span-8 p-6 md:p-10 flex flex-col gap-10 overflow-auto bg-[#0A0A0B]">
           
-          {!result && !isLoading && Object.keys(agentWarnings).length === 0 && (
+          {!result && !isLoading && (
             <div id="empty-state-welcome" className="flex-grow flex flex-col items-center justify-center text-center my-12 max-w-xl mx-auto gap-6 transition-all duration-300">
               <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
                 <Terminal className="w-8 h-8 text-white/80" />
@@ -490,7 +418,7 @@ export default function App() {
             </div>
           )}
 
-          {isLoading && !result && (
+          {isLoading && (
             <div id="loading-state" className="flex-grow flex flex-col items-center justify-center text-center py-20 gap-4">
               <div className="w-14 h-14 relative flex items-center justify-center">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-white/5 animate-ping"></span>
@@ -498,56 +426,14 @@ export default function App() {
               </div>
               <div>
                 <h3 className="text-lg font-light uppercase tracking-widest text-white/90">Drafting Blueprints</h3>
-                <p className="text-xs text-white/40 font-mono mt-1">{loadingStatus}</p>
+                <p className="text-xs text-white/40 font-mono mt-1">Modeling directory tables & pipeline environments...</p>
               </div>
             </div>
           )}
 
-          {/* Non-fatal per-agent warnings (a section was skipped but the run continued).
-              Rendered OUTSIDE the `result` gate so an ORCHESTRATOR-only / all-agents failure
-              (result stays null) still surfaces the skipped-section warnings instead of
-              silently snapping back to the empty welcome state. */}
-          {Object.keys(agentWarnings).length > 0 && (
-            <div id="agent-warnings" className="space-y-2">
-              {(Object.entries(agentWarnings) as [AgentName, string][]).map(([a, msg]) => (
-                <div key={a} className="p-3 bg-amber-950/30 border border-amber-500/30 text-amber-200 text-xs rounded flex gap-2 items-start">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
-                  <div>
-                    <span className="font-bold block uppercase tracking-wider text-[10px] font-mono">{a} section skipped</span>
-                    {msg}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {result && (
+          {result && !isLoading && (
             <div id="results-dashboard-grid" className="space-y-8 animate-fade-in">
-
-              {/* Live swarm activity ticker: shows which agent is filling the dashboard now */}
-              {(isLoading || activeAgent) && (
-                <div id="swarm-activity-ticker" className="flex items-center gap-3 bg-[#0D0D0F] border border-white/10 px-4 py-3 rounded-lg">
-                  <span className="relative flex h-2.5 w-2.5 shrink-0">
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                  </span>
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-white/70">{loadingStatus}</span>
-                  <div className="ml-auto flex items-center gap-1.5">
-                    {AGENT_ORDER.map((a) => (
-                      <span
-                        key={a}
-                        title={a}
-                        className={`w-1.5 h-1.5 rounded-full transition-all ${
-                          activeAgent === a
-                            ? 'bg-emerald-400 animate-pulse'
-                            : 'bg-white/20'
-                        }`}
-                      ></span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
+              
               {/* Intelligence Decision Header */}
               <div id="results-header-container" className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-white/10 pb-6">
                 <div>
@@ -558,42 +444,9 @@ export default function App() {
                     "{result.projectName}" &mdash; {result.oneLiner}
                   </p>
                 </div>
-                <div className="flex items-stretch gap-3 self-stretch md:self-auto">
-                  {/* Export the entire blueprint — the product payoff, not file-by-file copy.
-                      Scaffold is gated on having files: during streaming (after ORCHESTRATOR,
-                      before CODER) collectFiles is empty and a scaffold would write 0 files. */}
-                  {(() => { const fileCount = Object.keys(collectFiles(result)).length; return (
-                  <div id="export-actions" className="flex flex-col gap-2">
-                    <button
-                      id="export-scaffold-btn"
-                      onClick={downloadScaffold}
-                      disabled={fileCount === 0}
-                      title={fileCount === 0
-                        ? "Boilerplates not generated yet — wait for the Coder agent"
-                        : "Download a runnable Node script that writes the whole project to disk"}
-                      className="flex items-center gap-2 bg-white text-black hover:bg-white/90 disabled:bg-white/20 disabled:text-black/40 disabled:cursor-not-allowed px-4 py-2.5 rounded font-bold uppercase text-[10px] tracking-wider transition-all active:scale-[0.98]"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Scaffold (.mjs)
-                    </button>
-                    <button
-                      id="export-blueprint-btn"
-                      onClick={downloadBlueprint}
-                      title="Download the full blueprint as a single Markdown spec"
-                      className="flex items-center gap-2 bg-black/40 border border-white/15 text-white hover:border-white/35 px-4 py-2.5 rounded font-bold uppercase text-[10px] tracking-wider transition-all active:scale-[0.98]"
-                    >
-                      <FileDown className="w-3.5 h-3.5" />
-                      Blueprint (.md)
-                    </button>
-                    <span className="text-[9px] font-mono text-white/30 text-center">
-                      {fileCount} {fileCount === 1 ? 'file' : 'files'}
-                    </span>
-                  </div>
-                  ); })()}
-                  <div className="text-right p-4 bg-[#0D0D0F] border border-white/5 rounded-xl flex items-center justify-between md:block">
-                    <span className="text-[10px] uppercase tracking-[0.15em] text-white/40 block">Quality Scale</span>
-                    <span id="efficiency-indicator" className="block text-3xl font-mono leading-none text-white font-bold">99.8%</span>
-                  </div>
+                <div className="text-right p-4 bg-[#0D0D0F] border border-white/5 rounded-xl self-stretch md:self-auto flex items-center justify-between md:block">
+                  <span className="text-[10px] uppercase tracking-[0.15em] text-white/40 block">Quality Scale</span>
+                  <span id="efficiency-indicator" className="block text-3xl font-mono leading-none text-white font-bold">99.8%</span>
                 </div>
               </div>
 
