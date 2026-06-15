@@ -1,8 +1,17 @@
+# OS / editor / systems
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Node
 node_modules/
 build/
 dist/
 coverage/
-.DS_Store
 *.log
-.env*
+
+# Secrets
+.env
+.env.*
 !.env.example
