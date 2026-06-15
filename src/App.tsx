@@ -32,6 +32,7 @@ import { ArchitecturalPlanResponse, FileTreeNode } from './types';
 import { LiveVoiceArchitect } from './components/LiveVoiceArchitect';
 import { motion, AnimatePresence } from 'motion/react';
 import { GatewaysAuth } from './components/GatewaysAuth';
+import { Playbook } from './components/Playbook';
 
 // Preset configurations for user convenience
 const PRESETS = [
@@ -50,7 +51,7 @@ const PRESETS = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'configure' | 'blueprint' | 'gateways'>('configure');
+  const [activeTab, setActiveTab] = useState<'configure' | 'blueprint' | 'gateways' | 'playbook'>('configure');
   const [prompt, setPrompt] = useState(PRESETS[0].prompt);
   const [preferredFrontend, setPreferredFrontend] = useState('');
   const [preferredBackend, setPreferredBackend] = useState('');
@@ -224,10 +225,11 @@ export default function App() {
       </nav>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-white/10 px-8 bg-[#0D0D0F] shrink-0">
-        <button onClick={() => setActiveTab('configure')} className={`py-4 px-6 text-[10px] font-mono uppercase tracking-widest transition-all ${activeTab === 'configure' ? 'border-b-2 border-white text-white font-bold' : 'text-white/40 hover:text-white/80'}`}>01. Configure Workflow</button>
-        <button onClick={() => setActiveTab('blueprint')} className={`py-4 px-6 text-[10px] font-mono uppercase tracking-widest transition-all ${activeTab === 'blueprint' ? 'border-b-2 border-white text-white font-bold' : 'text-white/40 hover:text-white/80'}`}>02. Architectural Blueprint</button>
-        <button onClick={() => setActiveTab('gateways')} className={`py-4 px-6 text-[10px] font-mono uppercase tracking-widest transition-all ${activeTab === 'gateways' ? 'border-b-2 border-white text-white font-bold' : 'text-white/40 hover:text-white/80'}`}>03. Gateways & Auth</button>
+      <div className="flex border-b border-white/10 px-8 bg-[#0D0D0F] shrink-0 overflow-x-auto">
+        <button onClick={() => setActiveTab('configure')} className={`py-4 px-6 text-[10px] font-mono uppercase tracking-widest transition-all shrink-0 ${activeTab === 'configure' ? 'border-b-2 border-white text-white font-bold' : 'text-white/40 hover:text-white/80'}`}>01. Configure Workflow</button>
+        <button onClick={() => setActiveTab('blueprint')} className={`py-4 px-6 text-[10px] font-mono uppercase tracking-widest transition-all shrink-0 ${activeTab === 'blueprint' ? 'border-b-2 border-white text-white font-bold' : 'text-white/40 hover:text-white/80'}`}>02. Architectural Blueprint</button>
+        <button onClick={() => setActiveTab('gateways')} className={`py-4 px-6 text-[10px] font-mono uppercase tracking-widest transition-all shrink-0 ${activeTab === 'gateways' ? 'border-b-2 border-white text-white font-bold' : 'text-white/40 hover:text-white/80'}`}>03. Gateways & Auth</button>
+        <button onClick={() => setActiveTab('playbook')} className={`py-4 px-6 text-[10px] font-mono uppercase tracking-widest transition-all shrink-0 ${activeTab === 'playbook' ? 'border-b-2 border-white text-white font-bold' : 'text-white/40 hover:text-white/80'}`}>04. Playbook</button>
       </div>
 
       {/* Main Grid Workspace */}
@@ -947,6 +949,19 @@ export default function App() {
                className="w-full h-full overflow-y-auto py-8"
              >
                <GatewaysAuth />
+             </motion.div>
+          )}
+        
+          {activeTab === 'playbook' && (
+             <motion.div 
+               key="playbook"
+               initial={{ opacity: 0, x: -10 }}
+               animate={{ opacity: 1, x: 0 }}
+               exit={{ opacity: 0, x: 10 }}
+               transition={{ duration: 0.2 }}
+               className="w-full h-full overflow-y-auto"
+             >
+               <Playbook />
              </motion.div>
           )}
 
