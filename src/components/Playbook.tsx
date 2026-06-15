@@ -201,12 +201,12 @@ export function Playbook() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-grow">
         
         {/* Sidebar Nav */}
-        <div className="lg:col-span-4 bg-[#0D0D0F] border border-white/5 rounded-xl p-4 flex flex-col gap-5 max-h-[700px] overflow-y-auto">
+        <div className="lg:col-span-4 glass-panel glow-border p-4 flex flex-col gap-5 max-h-[700px] overflow-y-auto rounded-xl">
           {sections.map((section, sIdx) => {
             const SectionIcon = section.icon;
             return (
               <div key={sIdx} className="space-y-2">
-                <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-mono flex items-center gap-1.5 px-2">
+                <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono flex items-center gap-1.5 px-2">
                   <SectionIcon className="w-3.5 h-3.5" />
                   {section.title}
                 </h3>
@@ -219,7 +219,7 @@ export function Playbook() {
                       <button
                         key={file.id}
                         onClick={() => handleSelectFile(file)}
-                        className={`w-full text-left text-xs p-2.5 rounded transition-all flex items-center gap-2.5 group ${
+                        className={`w-full text-left text-xs p-2.5 rounded flex items-center gap-2.5 group cursor-pointer transition-all duration-200 hover:translate-x-0.5 ${
                           isSelected
                             ? 'bg-white/10 text-white font-semibold border-l-2 border-white'
                             : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -238,7 +238,7 @@ export function Playbook() {
         </div>
 
         {/* Content Viewer */}
-        <div className="lg:col-span-8 bg-[#0D0D0F] border border-white/5 rounded-xl overflow-hidden flex flex-col max-h-[700px]">
+        <div className="lg:col-span-8 glass-panel glow-border flex flex-col max-h-[700px] rounded-xl overflow-hidden">
           
           {/* Viewer Toolbar */}
           <div className="px-5 py-3 bg-black/40 border-b border-white/10 flex justify-between items-center gap-4 shrink-0">

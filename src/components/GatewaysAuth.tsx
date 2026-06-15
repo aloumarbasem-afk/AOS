@@ -31,7 +31,7 @@ export const GatewaysAuth: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Gemini Auth */}
-        <div className="bg-[#0D0D0F] border border-white/10 p-6 rounded-xl flex flex-col gap-4">
+        <div className="glass-panel glow-border glow-border-emerald p-6 rounded-xl flex flex-col gap-4 transition-all duration-300">
           <div className="flex justify-between items-center">
             <h3 className="text-xs font-mono uppercase tracking-widest text-white/80 flex items-center gap-2">
               <Zap className="w-4 h-4 text-emerald-400" /> Google Gemini API
@@ -50,12 +50,12 @@ export const GatewaysAuth: React.FC = () => {
             {!googleConnected ? (
               <button 
                 onClick={handleGoogleConnect}
-                className="w-full flex items-center justify-center gap-2 bg-white text-black hover:bg-white/90 px-4 py-3 rounded font-bold uppercase text-xs tracking-wider transition-all shadow-lg active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 bg-white text-black hover:bg-white/90 px-4 py-3 rounded font-bold uppercase text-xs tracking-wider transition-all duration-200 cursor-pointer shadow-lg hover:shadow-white/5 active:scale-[0.98] hover:scale-[1.01]"
               >
                 <LogIn className="w-4 h-4" /> Sign in with Google
               </button>
             ) : (
-              <div className="w-full flex items-center justify-center gap-2 bg-black/40 text-white/60 border border-white/10 px-4 py-3 rounded font-bold uppercase text-xs tracking-wider cursor-not-allowed">
+              <div className="w-full flex items-center justify-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-4 py-3 rounded font-bold uppercase text-xs tracking-wider cursor-not-allowed">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" /> Authenticated
               </div>
             )}
@@ -63,7 +63,7 @@ export const GatewaysAuth: React.FC = () => {
         </div>
 
         {/* Codex Auth */}
-        <div className="bg-[#0D0D0F] border border-white/10 p-6 rounded-xl flex flex-col gap-4">
+        <div className="glass-panel glow-border glow-border-indigo p-6 rounded-xl flex flex-col gap-4 transition-all duration-300">
           <div className="flex justify-between items-center">
             <h3 className="text-xs font-mono uppercase tracking-widest text-white/80 flex items-center gap-2">
               <Code className="w-4 h-4 text-indigo-400" /> Codex Configuration
@@ -81,10 +81,10 @@ export const GatewaysAuth: React.FC = () => {
                 value={codexKey}
                 onChange={(e) => setCodexKey(e.target.value)}
                 placeholder="sk-..."
-                className="w-full bg-black/50 border border-white/10 p-3 pl-9 rounded text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 font-mono"
+                className="w-full bg-black/50 border border-white/10 p-3 pl-9 rounded text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/40 font-mono transition-all duration-200"
               />
             </div>
-            <button className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-3 rounded font-bold uppercase text-xs tracking-wider transition-all shadow-lg active:scale-[0.98]">
+            <button className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-3 rounded font-bold uppercase text-xs tracking-wider transition-all duration-200 cursor-pointer shadow-lg hover:shadow-indigo-500/10 active:scale-[0.98] hover:scale-[1.01]">
               <Lock className="w-4 h-4" /> Save Codex Key
             </button>
           </div>

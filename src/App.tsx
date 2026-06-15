@@ -256,7 +256,7 @@ export default function App() {
                   key={index}
                   id={`preset-btn-${index}`}
                   onClick={() => setPrompt(preset.prompt)}
-                  className={`w-full text-left text-xs p-3 rounded border text-ellipsis overflow-hidden whitespace-nowrap transition-all ${
+                  className={`w-full text-left text-xs p-3 rounded border text-ellipsis overflow-hidden whitespace-nowrap transition-all duration-200 cursor-pointer hover:translate-x-0.5 ${
                     prompt === preset.prompt 
                       ? 'bg-white/10 text-white border-white/35 font-semibold' 
                       : 'bg-black/25 text-white/60 border-white/5 hover:border-white/20 hover:text-white'
@@ -338,7 +338,7 @@ export default function App() {
                   id={`agent-btn-${item.name.replace(/\s+/g, '-')}`}
                   type="button"
                   onClick={() => setAgent(item.name)}
-                  className={`text-left p-3 rounded transition-all flex flex-col ${
+                  className={`text-left p-3 rounded flex flex-col cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] ${
                     agent === item.name 
                       ? 'bg-white text-black font-bold' 
                       : 'bg-black/30 border border-white/15 text-white opacity-60 hover:opacity-100 hover:border-white/30'
@@ -358,7 +358,7 @@ export default function App() {
                   type="button"
                   id="agent-count-single-btn"
                   onClick={() => setAgentCount('single')}
-                  className={`flex-1 py-1.5 rounded text-center transition-all ${agentCount === 'single' ? 'bg-white/10 text-white font-semibold' : 'text-white/40 hover:text-white/70'}`}
+                  className={`flex-1 py-1.5 rounded text-center cursor-pointer transition-all duration-200 ${agentCount === 'single' ? 'bg-white/10 text-white font-semibold' : 'text-white/40 hover:text-white/70'}`}
                 >
                   Single Agent
                 </button>
@@ -366,7 +366,7 @@ export default function App() {
                   type="button"
                   id="agent-count-multi-btn"
                   onClick={() => setAgentCount('multi')}
-                  className={`flex-1 py-1.5 rounded text-center transition-all ${agentCount === 'multi' ? 'bg-white/10 text-white font-semibold' : 'text-white/40 hover:text-white/70'}`}
+                  className={`flex-1 py-1.5 rounded text-center cursor-pointer transition-all duration-200 ${agentCount === 'multi' ? 'bg-white/10 text-white font-semibold' : 'text-white/40 hover:text-white/70'}`}
                 >
                   Swarm Team (Multi-Agent)
                 </button>
@@ -391,7 +391,7 @@ export default function App() {
                 id="execute-btn"
                 onClick={generateBlueprint}
                 disabled={!prompt.trim()}
-                className="w-full flex items-center justify-center gap-3 bg-white text-black hover:bg-white/90 disabled:bg-white/20 disabled:text-black/50 px-6 py-4 rounded font-bold uppercase text-xs tracking-wider transition-all shadow-lg hover:shadow-white/5 active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-3 bg-white text-black hover:bg-white/90 disabled:bg-white/20 disabled:text-black/50 disabled:cursor-not-allowed px-6 py-4 rounded font-bold uppercase text-xs tracking-wider transition-all duration-200 cursor-pointer shadow-lg hover:shadow-white/5 active:scale-[0.98] hover:scale-[1.01]"
               >
                 Assemble Blueprint Framework
                 <span className="text-sm">→</span>
@@ -513,7 +513,7 @@ export default function App() {
               <div id="stack-decision-matrix" className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
                 {/* Frontend Card */}
-                <div className="bg-[#0D0D0F] border border-white/5 p-5 rounded-xl flex flex-col justify-between">
+                <div className="glass-panel glow-border glow-border-primary p-5 rounded-xl flex flex-col justify-between hover:scale-[1.01] transition-transform duration-200">
                   <div>
                     <h3 className="text-[10px] uppercase tracking-wider opacity-40 font-mono mb-2 flex items-center justify-between">
                       Frontend Frame <Layers className="w-3.5 h-3.5" />
@@ -534,7 +534,7 @@ export default function App() {
                 </div>
 
                 {/* Backend Card */}
-                <div className="bg-[#0D0D0F] border border-white/5 p-5 rounded-xl flex flex-col justify-between">
+                <div className="glass-panel glow-border glow-border-indigo p-5 rounded-xl flex flex-col justify-between hover:scale-[1.01] transition-transform duration-200">
                   <div>
                     <h3 className="text-[10px] uppercase tracking-wider opacity-40 font-mono mb-2 flex items-center justify-between">
                       Runtime Backend <Cpu className="w-3.5 h-3.5" />
@@ -555,7 +555,7 @@ export default function App() {
                 </div>
 
                 {/* Database Card */}
-                <div className="bg-[#0D0D0F] border border-white/5 p-5 rounded-xl flex flex-col justify-between">
+                <div className="glass-panel glow-border glow-border-emerald p-5 rounded-xl flex flex-col justify-between hover:scale-[1.01] transition-transform duration-200">
                   <div>
                     <h3 className="text-[10px] uppercase tracking-wider opacity-40 font-mono mb-2 flex items-center justify-between">
                       Database Layer <Database className="w-3.5 h-3.5" />
