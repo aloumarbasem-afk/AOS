@@ -1,0 +1,6 @@
+{
+  "name": "Full-Stack Architect & Planner",
+  "description": "An AI senior developer architect that converts natural-language prompts into an optimized full-stack architecture, customized agent execution plan, and boilerplate explorer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
