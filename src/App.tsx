@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Terminal, 
   Settings, 
@@ -28,7 +28,18 @@ import {
   ExternalLink,
   BookOpen
 } from 'lucide-react';
-import { ArchitecturalPlanResponse, FileTreeNode } from './types';
+import { ArchitecturalPlanResponse, FileTreeNode, AgentName, SSEEvent } from './types';
+
+// Human-readable status line shown per active agent.
+const AGENT_STATUS: Record<AgentName, string> = {
+  ORCHESTRATOR: 'Orchestrator: locking stack, scope & agent plan...',
+  DESIGNER: 'Designer: drafting high-performance frontend guide...',
+  CODER: 'Coder: scaffolding tree, boilerplates & auth strategy...',
+  TESTER: 'Tester: writing testing config & CI/CD pipeline...',
+};
+
+// Which agent fills each dashboard section (drives inline "pending" hints).
+const AGENT_ORDER: AgentName[] = ['ORCHESTRATOR', 'DESIGNER', 'CODER', 'TESTER'];
 
 // Preset configurations for user convenience
 const PRESETS = [
@@ -54,10 +65,13 @@ export default function App() {
   const [agent, setAgent] = useState('Cursor AI');
   const [agentCount, setAgentCount] = useState<'single' | 'multi'>('single');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentLoadingStep, setCurrentLoadingStep] = useState(0);
-  const [result, setResult] = useState<ArchitecturalPlanResponse | null>(null);
+  const [result, setResult] = useState<Partial<ArchitecturalPlanResponse> | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedFile, setCopiedFile] = useState<string | null>(null);
+  // Real-time agent activity from the SSE stream.
+  const [activeAgent, setActiveAgent] = useState<AgentName | null>(null);
+  // Non-fatal per-agent failures surfaced inline (section omitted but pipeline continued).
+  const [agentWarnings, setAgentWarnings] = useState<Partial<Record<AgentName, string>>>({});
 
   // File explorer interactions
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
@@ -65,78 +79,114 @@ export default function App() {
     'root': true,
   });
 
-  const loadingSteps = [
-    "Analyzing requirements & core constraints...",
-    "Evaluating intelligence stack & recommendations...",
-    "Querying Senior Dev intelligence agent...",
-    "Synthesizing optimal stack choices...",
-    "Drafting database schema & philosophy...",
-    "Generating granular authentication & RBAC strategy...",
-    "Building interactive tree directory...",
-    "Writing custom testing & CI/CD workflow...",
-    "Applying high-performance standard layout..."
-  ];
+  // Live status line reflecting the real active agent (replaces the old
+  // simulated interval). Falls back to a neutral message between agents.
+  const loadingStatus = activeAgent
+    ? AGENT_STATUS[activeAgent]
+    : 'Spinning up the architecture swarm...';
 
-  // Simulated compilation effect
-  useEffect(() => {
-    let interval: any;
-    if (isLoading) {
-      setCurrentLoadingStep(0);
-      interval = setInterval(() => {
-        setCurrentLoadingStep((prev) => {
-          if (prev >= loadingSteps.length - 1) {
-            clearInterval(interval);
-            return prev;
+  // Handle a single decoded SSE frame from the streaming pipeline.
+  const handleSSEEvent = (event: SSEEvent) => {
+    switch (event.type) {
+      case 'agent_start':
+        setActiveAgent(event.agent);
+        break;
+      case 'agent_complete':
+        setResult((prev) => {
+          const merged = { ...(prev || {}), ...event.payload };
+          // Auto-select the first boilerplate file once boilerplates arrive (CODER).
+          if (
+            event.payload.boilerplates &&
+            Object.keys(event.payload.boilerplates).length > 0
+          ) {
+            setSelectedFilePath((cur) => cur ?? Object.keys(event.payload.boilerplates!)[0]);
           }
-          return prev + 1;
+          return merged;
         });
-      }, 1500);
+        break;
+      case 'agent_error':
+        setAgentWarnings((prev) => ({ ...prev, [event.agent]: event.error }));
+        break;
+      case 'done':
+        setActiveAgent(null);
+        break;
     }
-    return () => clearInterval(interval);
-  }, [isLoading]);
+  };
 
-  // Generate the architectural blueprint
+  // Generate the architectural blueprint via a POST + SSE stream.
+  // EventSource is GET-only, so we read the response body manually.
   const generateBlueprint = async () => {
     setIsLoading(true);
     setErrorMsg(null);
     setResult(null);
+    setActiveAgent(null);
+    setAgentWarnings({});
+    setSelectedFilePath(null);
+
     try {
       const response = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          prompt, 
-          agents: [agent], 
-          preferredFrontend, 
-          preferredBackend, 
-          preferredDatabase 
+        body: JSON.stringify({
+          prompt,
+          agents: [agent],
+          preferredFrontend,
+          preferredBackend,
+          preferredDatabase,
         }),
       });
 
-      if (!response.ok) {
-        const errJson = await response.json();
-        throw new Error(errJson.error || 'Server error generating plan.');
+      // Non-SSE error path (e.g. the !prompt 400 guard) returns JSON.
+      if (!response.ok || !response.body) {
+        let message = 'Server error generating plan.';
+        try {
+          const errJson = await response.json();
+          message = errJson.error || message;
+        } catch {
+          /* body was not JSON */
+        }
+        throw new Error(message);
       }
 
-      const data: ArchitecturalPlanResponse = await response.json();
-      setResult(data);
-      
-      // Auto-select the first boilerplate file if available
-      if (data.boilerplates && Object.keys(data.boilerplates).length > 0) {
-        setSelectedFilePath(Object.keys(data.boilerplates)[0]);
-      } else {
-        setSelectedFilePath(null);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE frames are separated by a blank line. Keep any trailing
+        // partial frame in the buffer for the next chunk.
+        const frames = buffer.split('\n\n');
+        buffer = frames.pop() ?? '';
+
+        for (const frame of frames) {
+          const line = frame.trim();
+          if (!line.startsWith('data:')) continue;
+          const json = line.slice(line.indexOf('data:') + 'data:'.length).trim();
+          if (!json) continue;
+          try {
+            handleSSEEvent(JSON.parse(json) as SSEEvent);
+          } catch (parseErr) {
+            console.error('Failed to parse SSE frame:', json, parseErr);
+          }
+        }
       }
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'A network error occurred.');
     } finally {
       setIsLoading(false);
+      setActiveAgent(null);
     }
   };
 
-  const copyToClipboard = (text: string, identifier: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = (text: string | undefined, identifier: string) => {
+    navigator.clipboard.writeText(text ?? '');
     setCopiedFile(identifier);
     setTimeout(() => setCopiedFile(null), 2000);
   };
@@ -359,9 +409,9 @@ export default function App() {
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
                 <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-white/80 animate-pulse text-center">
-                  {loadingSteps[currentLoadingStep]}
+                  {loadingStatus}
                 </span>
-                <span className="text-[9px] text-white/40 font-mono">Evaluating architecture...</span>
+                <span className="text-[9px] text-white/40 font-mono">{activeAgent ? `${activeAgent} working...` : 'Evaluating architecture...'}</span>
               </div>
             ) : (
               <button
@@ -391,7 +441,7 @@ export default function App() {
         {/* Right column: The Full Architectural Output Dashboard */}
         <div id="right-dashboard-pane" className="lg:col-span-8 p-6 md:p-10 flex flex-col gap-10 overflow-auto bg-[#0A0A0B]">
           
-          {!result && !isLoading && (
+          {!result && !isLoading && Object.keys(agentWarnings).length === 0 && (
             <div id="empty-state-welcome" className="flex-grow flex flex-col items-center justify-center text-center my-12 max-w-xl mx-auto gap-6 transition-all duration-300">
               <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
                 <Terminal className="w-8 h-8 text-white/80" />
@@ -418,7 +468,7 @@ export default function App() {
             </div>
           )}
 
-          {isLoading && (
+          {isLoading && !result && (
             <div id="loading-state" className="flex-grow flex flex-col items-center justify-center text-center py-20 gap-4">
               <div className="w-14 h-14 relative flex items-center justify-center">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-white/5 animate-ping"></span>
@@ -426,14 +476,56 @@ export default function App() {
               </div>
               <div>
                 <h3 className="text-lg font-light uppercase tracking-widest text-white/90">Drafting Blueprints</h3>
-                <p className="text-xs text-white/40 font-mono mt-1">Modeling directory tables & pipeline environments...</p>
+                <p className="text-xs text-white/40 font-mono mt-1">{loadingStatus}</p>
               </div>
             </div>
           )}
 
-          {result && !isLoading && (
+          {/* Non-fatal per-agent warnings (a section was skipped but the run continued).
+              Rendered OUTSIDE the `result` gate so an ORCHESTRATOR-only / all-agents failure
+              (result stays null) still surfaces the skipped-section warnings instead of
+              silently snapping back to the empty welcome state. */}
+          {Object.keys(agentWarnings).length > 0 && (
+            <div id="agent-warnings" className="space-y-2">
+              {(Object.entries(agentWarnings) as [AgentName, string][]).map(([a, msg]) => (
+                <div key={a} className="p-3 bg-amber-950/30 border border-amber-500/30 text-amber-200 text-xs rounded flex gap-2 items-start">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+                  <div>
+                    <span className="font-bold block uppercase tracking-wider text-[10px] font-mono">{a} section skipped</span>
+                    {msg}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {result && (
             <div id="results-dashboard-grid" className="space-y-8 animate-fade-in">
-              
+
+              {/* Live swarm activity ticker: shows which agent is filling the dashboard now */}
+              {(isLoading || activeAgent) && (
+                <div id="swarm-activity-ticker" className="flex items-center gap-3 bg-[#0D0D0F] border border-white/10 px-4 py-3 rounded-lg">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-white/70">{loadingStatus}</span>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    {AGENT_ORDER.map((a) => (
+                      <span
+                        key={a}
+                        title={a}
+                        className={`w-1.5 h-1.5 rounded-full transition-all ${
+                          activeAgent === a
+                            ? 'bg-emerald-400 animate-pulse'
+                            : 'bg-white/20'
+                        }`}
+                      ></span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Intelligence Decision Header */}
               <div id="results-header-container" className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-white/10 pb-6">
                 <div>

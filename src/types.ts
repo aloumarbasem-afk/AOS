@@ -83,15 +83,25 @@ export interface AuthStrategy {
 }
 
 export interface ArchitecturalPlanResponse {
-  projectName: string;
-  oneLiner: string;
-  scope: string[];
-  stack: DecisionMatrix;
-  tree: FileTreeNode[];
-  boilerplates: Record<string, string>;
-  agentPlan: AgentBlueprint;
-  frontendGuide: FrontendOptimizationGuide;
-  testingStrategy: TestingSuiteStrategy;
-  cicdStrategy: CicdPipelineStrategy;
-  authStrategy: AuthStrategy;
+  projectName?: string;
+  oneLiner?: string;
+  scope?: string[];
+  stack?: DecisionMatrix;
+  tree?: FileTreeNode[];
+  boilerplates?: Record<string, string>;
+  agentPlan?: AgentBlueprint;
+  frontendGuide?: FrontendOptimizationGuide;
+  testingStrategy?: TestingSuiteStrategy;
+  cicdStrategy?: CicdPipelineStrategy;
+  authStrategy?: AuthStrategy;
 }
+
+// The four sequential agents in the streaming swarm pipeline.
+export type AgentName = "ORCHESTRATOR" | "DESIGNER" | "CODER" | "TESTER";
+
+// Server-Sent Event frames streamed from /api/generate-plan to the browser.
+export type SSEEvent =
+  | { type: "agent_start"; agent: AgentName }
+  | { type: "agent_complete"; agent: AgentName; payload: Partial<ArchitecturalPlanResponse> }
+  | { type: "agent_error"; agent: AgentName; error: string }
+  | { type: "done" };
